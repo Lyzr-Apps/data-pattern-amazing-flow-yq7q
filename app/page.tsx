@@ -560,8 +560,13 @@ export default function Page() {
         if (uploadResult.success && Array.isArray(uploadResult.asset_ids) && uploadResult.asset_ids.length > 0) {
           setAssetIds(uploadResult.asset_ids)
         } else {
-          const errorMsg = uploadResult.error || uploadResult.message || 'Upload failed'
-          setFileError(`Upload failed: ${errorMsg}. Please try again.`)
+          // Show debug info if available to help diagnose the issue
+          const debugInfo = (uploadResult as any)?._debug
+          let errorMsg = uploadResult.error || uploadResult.message || 'Upload failed'
+          if (debugInfo?.raw_response) {
+            errorMsg += ` [Debug: keys=${(debugInfo.raw_keys || []).join(',')}, status=${debugInfo.status}]`
+          }
+          setFileError(`${errorMsg}. Please try again.`)
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error'
