@@ -1,0 +1,56 @@
+{
+  "app_name": "DataLens - Excel Data Insights Generator",
+  "pattern": "single_agent",
+  "workflow": {
+    "nodes": [
+      {
+        "id": "input_node",
+        "type": "Input",
+        "label": "User Uploads Excel/CSV",
+        "nodeCategory": "input"
+      },
+      {
+        "id": "data_insights_agent",
+        "type": "Agent",
+        "label": "Data Insights Agent",
+        "nodeCategory": "agent"
+      },
+      {
+        "id": "output_node",
+        "type": "Output",
+        "label": "Executive Summary Report (PDF)",
+        "nodeCategory": "end"
+      }
+    ],
+    "edges": [
+      {
+        "source": "input_node",
+        "target": "data_insights_agent"
+      },
+      {
+        "source": "data_insights_agent",
+        "target": "output_node"
+      }
+    ]
+  },
+  "agents": [
+    {
+      "node_id": "data_insights_agent",
+      "agent_id": "6996cd83744b96afe6ba69ee",
+      "name": "Data Insights Agent",
+      "description": "Analyzes uploaded Excel/CSV data to identify patterns, trends, correlations, and anomalies. Generates a structured executive summary with key findings, statistical highlights, and actionable business recommendations as a downloadable PDF report.",
+      "agent_role": "Data Analyst and Insights Generator",
+      "agent_goal": "Analyze uploaded Excel/CSV data files to identify patterns, trends, correlations, and anomalies, then generate a comprehensive executive summary with actionable business insights",
+      "provider_id": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "top_p": 1.0,
+      "file_output": true,
+      "image_output_config": null,
+      "voice_config": null,
+      "tool_configs": [],
+      "managed_agents": [],
+      "response_schema_file": "response_schemas/data_insights_agent_response.json"
+    }
+  ]
+}

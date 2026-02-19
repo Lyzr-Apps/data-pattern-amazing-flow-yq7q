@@ -1,0 +1,30 @@
+{
+  "app_name": "DataLens - Excel Data Insights Generator",
+  "pattern": "single_agent",
+  "status": "agents_created",
+  "agent_ids": {
+    "data_insights_agent": "6996cd83744b96afe6ba69ee"
+  },
+  "rag_ids": {},
+  "schedule_ids": {},
+  "file_to_ingest": {
+    "url": "https://asset.lyzr.app/lXSl8ex2",
+    "purpose": "Excel pricing data to be analyzed for patterns, trends, and business insights",
+    "note": "This file should be passed as a processing input via the UI file upload"
+  },
+  "agents": [
+    {
+      "node_id": "data_insights_agent",
+      "agent_id": "6996cd83744b96afe6ba69ee",
+      "name": "Data Insights Agent",
+      "type": "file_output",
+      "model": "gpt-4.1",
+      "provider": "openai",
+      "temperature": 0.3,
+      "top_p": 1.0,
+      "file_output": true,
+      "has_response_schema": true,
+      "response_schema_file": "response_schemas/data_insights_agent_response.json"
+    }
+  ]
+}

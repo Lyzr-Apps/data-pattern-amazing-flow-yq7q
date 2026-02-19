@@ -1,0 +1,92 @@
+{
+  "agent_name": "Data Insights Agent",
+  "agent_id": "6996cd83744b96afe6ba69ee",
+  "description": "Analyzes uploaded Excel/CSV data to identify patterns, trends, correlations, and anomalies. Generates a structured executive summary with key findings, statistical highlights, and actionable business recommendations as a downloadable PDF report.",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "result": {
+      "executive_summary": "string",
+      "key_findings": [
+        {
+          "finding": "string",
+          "importance": "string"
+        }
+      ],
+      "data_patterns": [
+        {
+          "pattern": "string",
+          "details": "string"
+        }
+      ],
+      "anomalies": [
+        {
+          "anomaly": "string",
+          "severity": "string",
+          "details": "string"
+        }
+      ],
+      "recommendations": [
+        {
+          "recommendation": "string",
+          "priority": "string",
+          "rationale": "string"
+        }
+      ],
+      "statistics": {
+        "total_rows": "number",
+        "total_columns": "number",
+        "key_metrics": [
+          "string"
+        ]
+      }
+    }
+  },
+  "example_response": {
+    "result": {
+      "executive_summary": "Overall summary of the data analysis findings",
+      "key_findings": [
+        {
+          "finding": "Description of the key finding",
+          "importance": "Importance level: high, medium, or low"
+        }
+      ],
+      "data_patterns": [
+        {
+          "pattern": "Name or title of the pattern",
+          "details": "Detailed description of the pattern"
+        }
+      ],
+      "anomalies": [
+        {
+          "anomaly": "Description of the anomaly",
+          "severity": "Severity level: high, medium, or low",
+          "details": "Detailed explanation of the anomaly"
+        }
+      ],
+      "recommendations": [
+        {
+          "recommendation": "The actionable recommendation",
+          "priority": "Priority level: high, medium, or low",
+          "rationale": "Data-driven rationale for this recommendation"
+        }
+      ],
+      "statistics": {
+        "total_rows": 0,
+        "total_columns": 0,
+        "key_metrics": [
+          "sample string"
+        ]
+      }
+    }
+  },
+  "has_module_outputs": true,
+  "module_outputs_example": {
+    "artifact_files": [
+      {
+        "file_url": "https://example.com/file.pdf"
+      }
+    ]
+  }
+}
