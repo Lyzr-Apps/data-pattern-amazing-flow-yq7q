@@ -560,10 +560,12 @@ export default function Page() {
         if (uploadResult.success && Array.isArray(uploadResult.asset_ids) && uploadResult.asset_ids.length > 0) {
           setAssetIds(uploadResult.asset_ids)
         } else {
-          setFileError(uploadResult.error ?? 'Upload failed. Please try again.')
+          const errorMsg = uploadResult.error || uploadResult.message || 'Upload failed'
+          setFileError(`Upload failed: ${errorMsg}. Please try again.`)
         }
-      } catch {
-        setFileError('Upload failed. Please check your connection and try again.')
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error'
+        setFileError(`Upload failed: ${msg}. Please check your connection and try again.`)
       }
       setUploading(false)
     },
@@ -623,6 +625,7 @@ export default function Page() {
 
       if (result?.success) {
         let parsedResult = result?.response?.result
+        // Handle case where result is a JSON string
         if (typeof parsedResult === 'string') {
           try {
             parsedResult = JSON.parse(parsedResult)
@@ -630,19 +633,25 @@ export default function Page() {
             parsedResult = { executive_summary: parsedResult }
           }
         }
+        // Handle nested result (some responses wrap in another result key)
+        if (parsedResult?.result && typeof parsedResult.result === 'object') {
+          parsedResult = parsedResult.result
+        }
         setInsights(parsedResult as InsightsResult)
 
-        // Extract PDF URL
+        // Extract PDF URL from top-level module_outputs
         const artifacts = result?.module_outputs?.artifact_files
         if (Array.isArray(artifacts) && artifacts.length > 0) {
           const url = (artifacts[0] as ArtifactFile)?.file_url
           if (url) setPdfUrl(url)
         }
       } else {
-        setError(result?.error ?? result?.response?.message ?? 'Analysis failed. Please try again.')
+        const errMsg = result?.error || result?.details || result?.response?.message || 'Analysis failed'
+        setError(`${errMsg}. Please try again.`)
       }
-    } catch {
-      setError('Network error. Please check your connection and try again.')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      setError(`Network error: ${msg}. Please check your connection and try again.`)
     }
 
     setAnalyzing(false)
@@ -727,7 +736,22 @@ export default function Page() {
             {fileError && (
               <div className="flex items-start gap-2 p-3 border border-destructive/30 rounded-sm bg-destructive/5">
                 <FiAlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                <p className="text-xs text-destructive leading-snug">{fileError}</p>
+                <div className="flex-1">
+                  <p className="text-xs text-destructive leading-snug">{fileError}</p>
+                  {file && assetIds.length === 0 && !uploading && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 gap-1.5 text-xs h-7"
+                      onClick={() => {
+                        if (file) handleFileSelect(file)
+                      }}
+                    >
+                      <FiRefreshCw className="w-3 h-3" />
+                      Retry Upload
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 

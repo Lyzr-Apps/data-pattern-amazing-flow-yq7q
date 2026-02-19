@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 const LYZR_UPLOAD_URL = 'https://agent-prod.studio.lyzr.ai/v3/assets/upload'
 const LYZR_API_KEY = process.env.LYZR_API_KEY || ''
 
+export async function GET() {
+  return NextResponse.json({ status: 'ok', upload: 'POST only' })
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!LYZR_API_KEY) {
@@ -42,11 +46,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Forward the request to Lyzr API
+    // Forward each file to Lyzr API, converting to Blob for Node.js compat
     const uploadFormData = new FormData()
     for (const file of files) {
       if (file instanceof File) {
-        uploadFormData.append('files', file, file.name)
+        const arrayBuffer = await file.arrayBuffer()
+        const blob = new Blob([arrayBuffer], { type: file.type || 'application/octet-stream' })
+        uploadFormData.append('files', blob, file.name)
       }
     }
 
@@ -58,33 +64,103 @@ export async function POST(request: NextRequest) {
       body: uploadFormData,
     })
 
+    const responseText = await response.text()
+    let data: any = {}
+    try {
+      data = JSON.parse(responseText)
+    } catch {
+      console.error('Non-JSON upload response:', responseText)
+    }
+
     if (response.ok) {
-      const data = await response.json()
+      // Handle multiple possible response structures from Lyzr API
+      let assetIds: string[] = []
+      let uploadedFiles: any[] = []
 
-      const uploadedFiles = (data.results || []).map((r: any) => ({
-        asset_id: r.asset_id || '',
-        file_name: r.file_name || '',
-        success: r.success ?? true,
-        error: r.error,
-      }))
+      // Structure 1: { results: [{ asset_id, file_name, success }] }
+      if (Array.isArray(data.results)) {
+        uploadedFiles = data.results.map((r: any) => ({
+          asset_id: r.asset_id || r.id || '',
+          file_name: r.file_name || r.filename || '',
+          success: r.success ?? true,
+          error: r.error,
+        }))
+        assetIds = uploadedFiles
+          .filter((f: any) => f.success && f.asset_id)
+          .map((f: any) => f.asset_id)
+      }
+      // Structure 2: { files: [{ asset_id, ... }] }
+      else if (Array.isArray(data.files)) {
+        uploadedFiles = data.files.map((r: any) => ({
+          asset_id: r.asset_id || r.id || '',
+          file_name: r.file_name || r.filename || r.name || '',
+          success: r.success ?? true,
+          error: r.error,
+        }))
+        assetIds = uploadedFiles
+          .filter((f: any) => f.success && f.asset_id)
+          .map((f: any) => f.asset_id)
+      }
+      // Structure 3: { asset_id: "..." } (single file)
+      else if (data.asset_id) {
+        assetIds = [data.asset_id]
+        uploadedFiles = [{
+          asset_id: data.asset_id,
+          file_name: data.file_name || data.filename || '',
+          success: true,
+        }]
+      }
+      // Structure 4: { id: "..." } (single file alt)
+      else if (data.id) {
+        assetIds = [data.id]
+        uploadedFiles = [{
+          asset_id: data.id,
+          file_name: data.file_name || data.filename || '',
+          success: true,
+        }]
+      }
+      // Structure 5: { asset_ids: [...] }
+      else if (Array.isArray(data.asset_ids)) {
+        assetIds = data.asset_ids
+        uploadedFiles = data.asset_ids.map((id: string) => ({
+          asset_id: id,
+          file_name: '',
+          success: true,
+        }))
+      }
+      // Structure 6: Array at top level [{ asset_id, ... }]
+      else if (Array.isArray(data)) {
+        uploadedFiles = data.map((r: any) => ({
+          asset_id: r.asset_id || r.id || '',
+          file_name: r.file_name || r.filename || '',
+          success: r.success ?? true,
+          error: r.error,
+        }))
+        assetIds = uploadedFiles
+          .filter((f: any) => f.success && f.asset_id)
+          .map((f: any) => f.asset_id)
+      }
 
-      const assetIds = uploadedFiles
-        .filter((f: any) => f.success && f.asset_id)
-        .map((f: any) => f.asset_id)
+      // If we still have no asset_ids, log the full response for debugging
+      if (assetIds.length === 0) {
+        console.error('Upload succeeded but no asset_ids extracted. Full response:', JSON.stringify(data))
+      }
 
       return NextResponse.json({
-        success: true,
+        success: assetIds.length > 0,
         asset_ids: assetIds,
         files: uploadedFiles,
         total_files: data.total_files || files.length,
         successful_uploads: data.successful_uploads || assetIds.length,
-        failed_uploads: data.failed_uploads || 0,
-        message: `Successfully uploaded ${assetIds.length} file(s)`,
+        failed_uploads: data.failed_uploads || (assetIds.length === 0 ? files.length : 0),
+        message: assetIds.length > 0
+          ? `Successfully uploaded ${assetIds.length} file(s)`
+          : 'Upload completed but no asset IDs were returned',
         timestamp: new Date().toISOString(),
+        raw_keys: Object.keys(data),
       })
     } else {
-      const errorText = await response.text()
-      console.error('Upload API error:', response.status, errorText)
+      console.error('Upload API error:', response.status, responseText)
 
       return NextResponse.json(
         {
@@ -96,7 +172,7 @@ export async function POST(request: NextRequest) {
           failed_uploads: files.length,
           message: `Upload failed with status ${response.status}`,
           timestamp: new Date().toISOString(),
-          error: errorText,
+          error: data?.detail || data?.message || data?.error || responseText,
         },
         { status: response.status }
       )
